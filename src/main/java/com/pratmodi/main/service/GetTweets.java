@@ -19,6 +19,7 @@ import org.apache.commons.text.StringEscapeUtils;
 import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.action.index.IndexResponse;
 import org.elasticsearch.client.RequestOptions;
+import org.elasticsearch.common.Strings;
 import org.elasticsearch.xcontent.XContentBuilder;
 import org.elasticsearch.xcontent.XContentFactory;
 import org.elasticsearch.xcontent.XContentType;
@@ -170,8 +171,6 @@ public class GetTweets {
 
     public void persistAll(List<Tweet> list/*String str*/) throws IOException {
         try {
-            Tweet tweet = new Tweet();
-
             Gson gson = new GsonBuilder()
                     .setLenient()
                     .create();
@@ -198,6 +197,7 @@ public class GetTweets {
 //                List<TweetAttributes> lcs = (List<TweetAttributes>) new Gson()
 //                        .fromJson( jsonCartList , collectionType);
 //
+
                 ObjectMapper objectMapper = new ObjectMapper();
                 List<TweetAttributes> data = objectMapper.readValue(objectMapper.writeValueAsString(enums), new TypeReference<List<TweetAttributes>>() {});
 //
@@ -215,11 +215,11 @@ public class GetTweets {
                 }
 
                 IndexRequest indexRequest = new IndexRequest("user");
-//                String result = Strings.toString(builder);
-                indexRequest.source(jsonCartList.replace("."," "), String.class);
+        //        String result = Strings.toString(builder);
+                indexRequest.source(jsonCartList.replace(".",""), TweetAttributes.class);
 
                 IndexResponse response = esConfiguration.getESClient().index(indexRequest, RequestOptions.DEFAULT);
-
+                this.saveToFile(jsonCartList);
                 System.out.println("^^^^^^^^&&&&&&&&&&&&&&^^^^^^^^^^" + response.getIndex() + "    " + response.getResult() + "    " + response.getId() + "    " + "^^^^^^^^&&&&&&&&&&&&&&^^^^^^^^^^");
             }catch (Exception e){
                 System.out.println("NEWJSON EXCEPTION: "+e);
@@ -259,6 +259,17 @@ public class GetTweets {
             System.out.println(" EXCEPTION OCCURRED!!!!!!!!!!!!" + exception);
         }
 
+    }
+
+    public void saveToFile(String jsonString) throws IOException {
+        Gson gson = new GsonBuilder().setPrettyPrinting().setLenient().create();
+
+        FileWriter recipesFile = new FileWriter("C:\\Users\\pratm\\OneDrive\\Documents\\IDEA Intellij\\UBS\\ac41e4ba-375c-4bc7-b755-6ef39923aa97\\Twit4J\\TwitterExtract.json", true);
+
+        //    this.persistAll(jsonString);
+        recipesFile.write(jsonString);
+        recipesFile.flush();
+        recipesFile.close();
     }
 
 }
