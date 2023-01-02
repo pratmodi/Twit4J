@@ -38,8 +38,7 @@ import java.lang.reflect.Type;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 
-import static org.elasticsearch.xcontent.XContentFactory.jsonBuilder;
-import static org.elasticsearch.xcontent.XContentFactory.xContent;
+import static org.elasticsearch.xcontent.XContentFactory.*;
 
 @Component("getTweets")
 public class GetTweets {
@@ -49,9 +48,6 @@ public class GetTweets {
 
     @Autowired
     BasicService basicService;
-
-    @Autowired
-    private Config config;
 
     @Value("${bearer.Token}")
     private String bearerToken;
@@ -71,17 +67,11 @@ public class GetTweets {
 
         JSONObject jsonObject = new JSONObject(list);
 
-   //     TweetBasicModel tbm = new TweetBasicModel();
-
         StringBuilder tweetID = new StringBuilder();
         StringBuilder tweetText = new StringBuilder();
 
         if (list != null) {
             for (Tweet tweet : list) {
-                ///       System.out.println(tweet.getId());
-                //       System.out.println(tweet.getText());
-             //   tweetID.append(tweet.getId()+" ");
-             //   tweetText.append(tweet.getText()+" ");
                 tweetID.append(tweet.getId());
                 tweetText.append(tweet.getText());
             }
@@ -183,40 +173,43 @@ public class GetTweets {
             }
             finalJSON = StringEscapeUtils.unescapeJava(temp.toString());
             try {
-                // convert your list to json
+
                 String jsonCartList = gson.toJson(list);
 
                 System.out.println("()()()()()()()()()(()()()()(" + jsonCartList);
-        //        TweetAttributes s = gson.fromJson(String.valueOf(jsonCartList), TweetAttributes.class);
+
 
 
                 Type collectionType = new TypeToken<Collection<TweetAttributes>>(){}.getType();
                 Collection<TweetAttributes> enums = gson.fromJson(jsonCartList, collectionType);
 
-//                Type collectionType = new TypeToken<List<TweetAttributes>>(){}.getType();
-//                List<TweetAttributes> lcs = (List<TweetAttributes>) new Gson()
-//                        .fromJson( jsonCartList , collectionType);
-//
 
                 ObjectMapper objectMapper = new ObjectMapper();
                 List<TweetAttributes> data = objectMapper.readValue(objectMapper.writeValueAsString(enums), new TypeReference<List<TweetAttributes>>() {});
+
+                XContentBuilder builder = jsonBuilder().startObject();
+//        //        for (int i = 0; i < list.size()-1; i++) {
+//                    builder = jsonBuilder()
+//                            .startObject()
+//                            .field(/*tweet.getId() != null ? tweet.getId() :*/ "tweetID", enums.toString())
+//                            .field(/*tweet.getText() != null ? tweet.getText() :*/ "tweet", enums.toString())
+//                            .endObject().prettyPrint();
 //
-//                System.out.println("+++++++++++++++++++++"+" TEST: "+" REACHED HERE "+data.get(0).getTweetText()+"+++++++++++++++++++++");
+//        //        }
 
-                //    Tweet item = gson.fromJson(String.valueOf(list), Tweet.class);
-
-                XContentBuilder builder = null;
-                for (int i = 0; i < list.size()-1; i++) {
-                    builder = jsonBuilder()
-                            .startObject()
-                            .field(/*tweet.getId() != null ? tweet.getId() :*/ "tweetID", data.get(i).getTweetID())
-                            .field(/*tweet.getText() != null ? tweet.getText() :*/ "tweet", data.get(i).getTweetText())
-                            .endObject().prettyPrint();
+                builder.startArray("tweets");
+                for(int j=0;j<list.size();j++) {
+                    builder.startObject();
+                    builder.field("tweetID", data.get(j).getId());
+                    builder.field("tweet", data.get(j).getText());
+                    builder.endObject();
                 }
+                builder.endArray();
+                builder.endObject();
 
-                IndexRequest indexRequest = new IndexRequest("user");
-        //        String result = Strings.toString(builder);
-                indexRequest.source(jsonCartList.replace(".",""), TweetAttributes.class);
+                IndexRequest indexRequest = new IndexRequest("defaultbest");
+                String result = Strings.toString(builder);
+                indexRequest.source(result.replace(".",""), TweetAttributes.class);
 
                 IndexResponse response = esConfiguration.getESClient().index(indexRequest, RequestOptions.DEFAULT);
                 this.saveToFile(jsonCartList);
@@ -232,16 +225,11 @@ public class GetTweets {
     public void saveToES(TweetBasicModel tweetBasicModel, int maxResults) throws IOException {
         try {
 
-//            ObjectMapper objectMapper = new ObjectMapper();
-//            tweetBasicModel =  objectMapper.readValue(tweetBasicModel.getId()+tweetBasicModel.getText(), TweetBasicModel.class);
-//
-//            System.out.println("objectMapper.writeValueAsString: "+objectMapper.writeValueAsString(tweetBasicModel));
-
             XContentBuilder xcb = XContentFactory.jsonBuilder().prettyPrint();
 
             xcb.startObject();
             xcb.startObject("tweets");
-            //  xcb.startObject("Rechnungsdatum");
+
             xcb.field(tweetBasicModel.getId() != null ? tweetBasicModel.getId() : "", "string");
             xcb.field(tweetBasicModel.getText() != null ? tweetBasicModel.getText() : "", "string");
             //   xcb.endObject();
